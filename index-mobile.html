@@ -1,0 +1,1288 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>三板斧山庄疑案 · 手机竖屏线框原型</title>
+<style>
+  /* ============ 灰度线框设计令牌 ============ */
+  :root{
+    --bg:#f2f2f2;
+    --panel:#ffffff;
+    --border:#bcbcbc;
+    --border-dark:#7a7a7a;
+    --border-light:#d8d8d8;
+    --text:#333333;
+    --text-light:#777777;
+    --btn-bg:#e6e6e6;
+    --btn-bg-hover:#d4d4d4;
+    --img-bg:#d2d2d2;
+    --img-line:#9a9a9a;
+    --locked:#b0b0b0;
+    --space:12px;
+    --radius:4px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;}
+  body{
+    font-family:"Microsoft YaHei","PingFang SC",sans-serif;
+    background:#ddd;color:var(--text);font-size:14px;line-height:1.5;
+    -webkit-text-size-adjust:100%;
+  }
+
+  /* ============ 移动端布局骨架 ============ */
+  .app{
+    display:flex;flex-direction:column;
+    height:100dvh;height:100vh;width:100vw;max-width:520px;margin:0 auto;
+    background:var(--bg);position:relative;overflow:hidden;
+  }
+  .topbar{
+    flex:none;min-height:46px;background:var(--panel);
+    border-bottom:1px solid var(--border);
+    display:flex;align-items:center;justify-content:space-between;
+    padding:0 12px;gap:8px;
+  }
+  .topbar-title{font-size:15px;font-weight:bold;flex:none;}
+  .topbar-status{
+    display:flex;align-items:center;gap:8px;color:var(--text-light);
+    font-size:11px;flex-wrap:wrap;justify-content:flex-end;max-width:64%;
+  }
+  .topbar-status .btn.sm{padding:3px 8px;font-size:11px;}
+  .content{flex:1;overflow:auto;position:relative;background:var(--bg);-webkit-overflow-scrolling:touch;}
+
+  /* 页面：移动端走正常文档流，由 .content 统一滚动 */
+  .page{display:none;}
+  .page.active{display:flex;flex-direction:column;min-height:100%;}
+
+  /* ============ 通用组件 ============ */
+  .panel{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);}
+  .panel-head{
+    padding:10px 12px;border-bottom:1px solid var(--border-light);
+    font-weight:bold;font-size:13px;background:#fafafa;
+  }
+  .panel-head .hint{font-weight:normal;color:var(--text-light);font-size:11px;margin-left:4px;}
+
+  .btn{
+    background:var(--btn-bg);border:1px solid var(--border-dark);
+    border-radius:var(--radius);padding:9px 16px;cursor:pointer;
+    color:var(--text);font-size:13px;
+  }
+  .btn:hover{background:var(--btn-bg-hover);}
+  .btn.primary{background:#cccccc;border-color:#666;}
+  .btn.sm{padding:4px 10px;font-size:12px;}
+
+  .img-ph{
+    background:var(--img-bg);
+    background-image:repeating-linear-gradient(45deg,transparent,transparent 8px,rgba(0,0,0,0.06) 8px,rgba(0,0,0,0.06) 9px);
+    border:1px solid var(--img-line);
+    display:flex;align-items:center;justify-content:center;
+    color:var(--img-line);font-size:12px;
+  }
+
+  .scroll{overflow:auto;-webkit-overflow-scrolling:touch;}
+
+  /* Tooltip */
+  .tooltip-wrap{position:relative;display:inline-block;}
+  .tooltip{
+    display:none;position:absolute;bottom:100%;left:50%;
+    transform:translateX(-50%);margin-bottom:6px;
+    background:#ffffff;border:1px solid var(--border-dark);
+    padding:6px 10px;font-size:12px;white-space:nowrap;
+    border-radius:var(--radius);z-index:50;color:var(--text);
+  }
+  .tooltip-wrap:hover .tooltip{display:block;}
+
+  /* Dialog */
+  .dialog-overlay{
+    display:none;position:fixed;inset:0;background:rgba(60,60,60,0.35);
+    z-index:100;align-items:flex-start;justify-content:center;
+  }
+  .dialog-overlay.show{display:flex;}
+  .dialog{
+    margin-top:64px;width:360px;max-width:92vw;background:var(--panel);
+    border:1px solid var(--border-dark);border-radius:var(--radius);
+  }
+  .dialog-head{
+    padding:10px 14px;border-bottom:1px solid var(--border-light);
+    font-weight:bold;display:flex;justify-content:space-between;align-items:center;
+  }
+  .dialog-body{padding:14px;}
+  .dialog-foot{padding:10px 14px;border-top:1px solid var(--border-light);display:flex;gap:8px;justify-content:flex-end;}
+
+  /* Toast */
+  .toast{
+    display:none;position:fixed;left:50%;bottom:66px;transform:translateX(-50%);
+    background:#444;color:#fff;padding:10px 18px;border-radius:var(--radius);
+    font-size:13px;z-index:200;max-width:86vw;text-align:center;
+  }
+  .toast.show{display:block;}
+
+  /* ============ 底部 Tab 导航（替代侧边栏） ============ */
+  .bottomnav{
+    flex:none;display:flex;gap:4px;padding:6px 6px;
+    background:var(--panel);border-top:1px solid var(--border);
+  }
+  .bottomnav .nav-item{
+    flex:1 1 0;min-width:0;white-space:nowrap;text-align:center;
+    padding:8px 2px;font-size:11px;line-height:1.2;
+    background:var(--btn-bg);border:1px solid var(--border);
+    border-radius:var(--radius);color:var(--text);cursor:pointer;
+  }
+  .bottomnav .nav-item:hover{background:var(--btn-bg-hover);}
+  .bottomnav .nav-item.active{background:#cfcfcf;border-color:var(--border-dark);font-weight:bold;}
+
+  /* ============ 主地图（移动端：楼层长卷纵向堆叠） ============ */
+  .map-layout{flex:1;display:flex;flex-direction:column;gap:var(--space);padding:var(--space);min-height:0;}
+  .map-main{flex:1;display:flex;flex-direction:column;min-height:0;}
+  .map-side{display:flex;flex-direction:column;}
+  .map-scroll{padding:var(--space);}
+
+  .floor{border:1px solid var(--border);border-radius:var(--radius);margin-bottom:14px;background:#fbfbfb;}
+  .floor-label{
+    padding:6px 12px;background:#ededed;border-bottom:1px solid var(--border-light);
+    font-weight:bold;letter-spacing:2px;
+  }
+  .floor-diagram{padding:14px 10px;display:flex;flex-direction:column;align-items:center;gap:0;}
+  .row{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;}
+  .row.left{justify-content:flex-start;padding-left:20px;}
+  .conn-v{width:2px;height:20px;background:var(--border-dark);margin:0 auto;}
+  .conn-h{width:22px;height:2px;background:var(--border-dark);}
+
+  .room{
+    position:relative;min-width:72px;padding:9px 7px;text-align:center;
+    background:var(--panel);border:1px solid var(--border-dark);
+    border-radius:var(--radius);cursor:pointer;font-size:12px;user-select:none;
+    margin:2px;
+  }
+  .room:hover{background:#eaeaea;}
+  .room.s-new{border-width:2px;font-weight:bold;}
+  .room.s-new::after{
+    content:"!";position:absolute;top:-8px;right:-8px;
+    width:18px;height:18px;background:#555;color:#fff;border-radius:50%;
+    font-size:12px;line-height:18px;text-align:center;
+  }
+  .room.s-done{border-style:double;border-color:var(--border-dark);}
+  .room.s-done::after{
+    content:"✓";position:absolute;top:-8px;right:-8px;
+    width:18px;height:18px;background:#888;color:#fff;border-radius:50%;
+    font-size:11px;line-height:18px;text-align:center;
+  }
+  .room.s-lock{
+    border-style:dashed;color:var(--locked);background:#f0f0f0;opacity:0.7;
+  }
+  .room.s-lock::after{
+    content:"锁";position:absolute;top:-8px;right:-8px;
+    width:18px;height:18px;background:#999;color:#fff;border-radius:50%;
+    font-size:11px;line-height:18px;text-align:center;
+  }
+
+  .legend{padding:12px;display:flex;flex-direction:column;gap:8px;font-size:12px;}
+  .legend-item{display:flex;align-items:center;gap:8px;}
+  .legend-box{width:22px;height:18px;border:1px solid var(--border-dark);border-radius:3px;flex:none;}
+  .legend-box.lb-new{border-width:2px;}
+  .legend-box.lb-done{border-style:double;}
+  .legend-box.lb-lock{border-style:dashed;opacity:0.7;}
+  .selected-info{padding:12px;border-top:1px solid var(--border-light);font-size:13px;color:var(--text-light);line-height:1.6;}
+  .selected-info b{color:var(--text);}
+
+  /* ============ 通用页内容 ============ */
+  .page-pad{flex:1;padding:var(--space);overflow:auto;-webkit-overflow-scrolling:touch;}
+  .center-col{max-width:360px;margin:32px auto 0;display:flex;flex-direction:column;gap:14px;}
+  .field-label{font-size:12px;color:var(--text-light);margin-bottom:4px;}
+  .field-ph{height:38px;border:1px solid var(--border-dark);border-radius:var(--radius);background:#fafafa;}
+  .two-col{display:flex;flex-direction:column;gap:var(--space);padding:var(--space);}
+  .list-item{
+    padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius);
+    margin-bottom:8px;cursor:pointer;background:var(--panel);font-size:13px;
+  }
+  .list-item:hover{background:#efefef;}
+  .list-item.active{background:#cfcfcf;border-color:var(--border-dark);font-weight:bold;}
+  .detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:var(--space);padding:var(--space);}
+  .detail-grid .img-ph{height:120px;}
+  .tabs{display:flex;gap:6px;padding:var(--space) var(--space) 0;flex-wrap:wrap;}
+  .tab{
+    padding:6px 14px;border:1px solid var(--border);border-bottom:none;
+    border-radius:var(--radius) var(--radius) 0 0;background:var(--btn-bg);cursor:pointer;font-size:13px;
+  }
+  .tab.active{background:var(--panel);font-weight:bold;border-color:var(--border-dark);}
+  .tab-content{flex:1;border:1px solid var(--border);border-radius:0 var(--radius) var(--radius) var(--radius);margin:0 var(--space) var(--space);padding:var(--space);overflow:auto;}
+  .timeline{padding:var(--space);}
+  .tl-node{border-left:2px solid var(--border-dark);padding:0 0 18px 18px;position:relative;}
+  .tl-node::before{content:"";position:absolute;left:-6px;top:4px;width:10px;height:10px;background:var(--border-dark);border-radius:50%;}
+  .tl-time{font-weight:bold;font-size:13px;}
+  .tl-title{font-size:13px;margin:2px 0 6px;}
+  .report-section{border:1px solid var(--border);border-radius:var(--radius);padding:var(--space);margin-bottom:var(--space);}
+  .report-section h4{margin-bottom:8px;font-size:13px;}
+  .report-row{display:flex;gap:10px;margin-bottom:8px;align-items:flex-start;}
+  .report-row .field-label{flex:none;width:80px;}
+  .report-row .field-ph{flex:1;}
+
+  /* ============ 宾客档案（卡片网格·移动端 2 列） ============ */
+  .guest-dossier{
+    flex:1;display:flex;flex-direction:column;
+    background:#fafaf8;border:1px solid var(--border-dark);
+    border-radius:var(--radius);margin:var(--space);overflow:hidden;min-height:0;
+  }
+  .dossier-head{
+    padding:12px 16px;border-bottom:1px solid var(--border-light);
+    display:flex;justify-content:space-between;align-items:center;background:#f0efe8;
+  }
+  .dossier-title{font-size:16px;font-weight:bold;color:#333;}
+  .dossier-body{flex:1;padding:16px;overflow:auto;-webkit-overflow-scrolling:touch;}
+  .card-grid{
+    display:grid;grid-template-columns:repeat(2,1fr);gap:18px 12px;
+  }
+  .char-card{
+    display:flex;flex-direction:column;align-items:center;gap:6px;
+  }
+  .char-avatar{
+    width:100%;height:120px;border:1px solid var(--border-dark);
+    border-radius:3px;background:var(--img-bg);
+    background-image:repeating-linear-gradient(45deg,transparent,transparent 7px,rgba(0,0,0,0.04) 7px,rgba(0,0,0,0.04) 8px);
+    color:#444;font-size:40px;font-weight:bold;letter-spacing:1px;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .char-name{font-size:13px;text-align:center;max-width:140px;line-height:1.35;}
+  .char-name.locked{color:var(--text-light);}
+  .btn-id{
+    margin-top:2px;background:#555;color:#fff;border-color:#444;
+    font-size:12px;padding:6px 18px;
+  }
+  .char-card.identified .char-avatar{border-color:var(--border-dark);border-width:2px;}
+  .char-role-line{font-size:12px;color:var(--text-light);text-align:center;max-width:140px;line-height:1.3;}
+  .char-card.identified .btn-id{display:none;}
+
+  /* ============ 「这是谁？」确认身份弹窗 ============ */
+  .dlg-identify{
+    margin-top:56px;width:340px;max-width:92vw;background:#f8f6ef;
+    border:1px solid var(--border-dark);border-radius:6px;
+  }
+  .dlg-identify .dialog-head{
+    background:none;border-bottom:1px solid var(--border-light);
+    font-size:16px;padding:12px 16px;
+  }
+  .dlg-identify .dialog-body{text-align:center;}
+  .id-avatar{
+    width:90px;height:108px;border:1px solid var(--border-dark);
+    margin:0 auto 14px;background:#e8e6de;
+    display:flex;align-items:center;justify-content:center;
+    font-size:24px;font-weight:bold;color:#666;border-radius:3px;
+  }
+  .id-field{margin-bottom:12px;text-align:left;padding-left:16px;padding-right:16px;}
+  .id-field label{display:block;font-size:13px;margin-bottom:4px;color:#555;}
+  /* 选择器：点击展开选项列表 */
+  .picker-wrap{position:relative;display:inline-block;width:100%;}
+  .picker-trigger{
+    width:100%;height:36px;border:1px solid #999;background:#fff;
+    border-radius:3px;padding:0 10px;font-size:13px;
+    text-align:left;cursor:pointer;display:flex;align-items:center;
+    justify-content:space-between;
+  }
+  .picker-trigger::after{content:'▼';font-size:10px;color:#888;}
+  .picker-list{
+    display:none;position:absolute;top:100%;left:0;right:0;
+    background:#fff;border:1px solid #999;border-top:none;
+    max-height:150px;overflow:auto;z-index:60;
+  }
+  .picker-list.show{display:block;}
+  .picker-opt{
+    padding:9px 10px;font-size:13px;cursor:pointer;border-bottom:1px solid #f0f0f0;
+  }
+  .picker-opt:hover{background:#eee;}
+  .picker-opt.selected{background:#ddd;font-weight:bold;}
+
+  /* ============ 房间调查：灵视聚焦 + 事件回放 ============ */
+  .room-invest{
+    flex:1;display:flex;flex-direction:column;min-height:0;
+    background:#f5f3ed;
+  }
+  /* 顶栏：地图/宾客/证物栏/地点切换/时间线（移动端横向滚动） */
+  .room-topbar{
+    flex:none;background:#e8e4d8;border-bottom:1px solid var(--border);
+    display:flex;align-items:center;gap:6px;padding:8px 10px;overflow-x:auto;
+    -webkit-overflow-scrolling:touch;
+  }
+  .room-topbar .btn-nav{
+    flex:none;padding:6px 12px;font-size:12px;background:#d4cfc2;border-color:#bbb;
+    border-radius:3px;color:#444;cursor:pointer;white-space:nowrap;
+  }
+  .room-topbar .btn-nav:hover{background:#c8c2b4;}
+  .room-topbar .loc-select{
+    flex:none;padding:6px 8px;font-size:12px;border:1px solid #bbb;border-radius:3px;background:#fff;color:#444;
+  }
+  .room-datetime{margin-left:auto;font-size:12px;color:#888;white-space:nowrap;}
+  /* 主区域 */
+  .focus-area{flex:1;overflow:auto;-webkit-overflow-scrolling:touch;padding:22px 16px;text-align:center;}
+  .focus-hint{
+    color:#bbb;font-size:14px;margin-bottom:20px;letter-spacing:1px;
+  }
+  /* 人物选择区 */
+  .focus-section-title{
+    font-size:13px;color:#999;text-align:left;margin-bottom:12px;padding-left:4px;
+  }
+  .char-select-grid{
+    display:flex;gap:20px;flex-wrap:wrap;justify-content:center;margin-bottom:26px;
+  }
+  .focus-char-card{
+    width:110px;text-align:center;cursor:pointer;
+  }
+  .focus-avatar{
+    width:100px;height:120px;border:2px solid #ccc;border-radius:4px;
+    background:var(--img-bg);background-image:repeating-linear-gradient(45deg,transparent,transparent 7px,rgba(0,0,0,0.04) 7px,rgba(0,0,0,0.04) 8px);
+    display:flex;align-items:center;justify-content:center;
+    font-size:30px;font-weight:bold;color:#999;margin:0 auto 6px;
+  }
+  .focus-char-name{font-size:12px;color:#666;}
+  .focus-char-card.selected .focus-avatar{border-color:#555;border-width:2px;color:#333;}
+  .focus-char-card.selected .focus-char-name{color:#333;font-weight:bold;}
+  /* 回响按钮 */
+  .btn-resonate{
+    display:inline-block;padding:12px 52px;font-size:15px;
+    background:#777;color:#fff;border:none;border-radius:4px;cursor:pointer;
+  }
+  .btn-resonate:hover{background:#666;}
+
+  /* 底部时间轴（移动端：横向滚动） */
+  .rail-date{font-size:11px;color:#aaa;text-align:center;padding:8px 0 2px;letter-spacing:1px;}
+  .time-rail{
+    flex:none;background:#e8e4d8;border-top:1px solid var(--border);
+    display:flex;align-items:center;gap:6px;padding:10px 12px;
+    overflow-x:auto;-webkit-overflow-scrolling:touch;position:relative;
+  }
+  .time-slot{
+    flex:none;width:42px;height:40px;border:1px solid #bbb;border-radius:3px;
+    background:#fff;display:flex;align-items:center;justify-content:center;
+    font-size:11px;color:#888;cursor:pointer;
+  }
+  .time-slot:hover{border-color:#888;}
+  .time-slot.selected{border-color:#555;border-width:2px;background:#ddd;color:#333;font-weight:bold;}
+  .time-slot.correct{border-color:#555;background:#ccc;}
+  .time-marker{
+    position:absolute;top:-6px;width:0;height:0;
+    border-left:7px solid transparent;border-right:7px solid transparent;
+    border-bottom:10px solid #666;
+  }
+
+  /* ====== 事件回放视图（回响成功后显示） ====== */
+  .event-view{
+    flex:1;overflow:auto;-webkit-overflow-scrolling:touch;padding:18px 16px;display:none;flex-direction:column;
+  }
+  .event-view.show{display:flex;}
+  .evt-line{
+    display:flex;gap:10px;margin-bottom:16px;align-items:flex-start;
+  }
+  .evt-avatar{
+    width:42px;height:52px;border:1px solid #bbb;border-radius:3px;
+    background:var(--img-bg);display:flex;align-items:center;justify-content:center;
+    font-size:16px;font-weight:bold;color:#999;flex-shrink:0;
+  }
+  .evt-body{flex:1;min-width:0;}
+  .evt-speaker{
+    font-size:13px;font-weight:bold;color:#555;margin-bottom:2px;
+  }
+  .evt-text{
+    font-size:14px;color:#444;line-height:1.7;
+  }
+  /* 可收集关键词 */
+  .kw{
+    color:#2a6496;cursor:pointer;border-bottom:1px dashed #2a6496;
+    padding:0 1px;
+  }
+  .kw:hover{background:#e8eff5;}
+  .kw.collected{color:#888;border-bottom-style:solid;border-bottom-color:#ccc;cursor:default;}
+  .kw.collected:hover{background:none;}
+  /* 旁白/动作描述 */
+  .evt-action{color:#999;font-size:12px;font-style:italic;margin:4px 0 8px;}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- ============ 顶部状态栏 ============ -->
+  <header class="topbar">
+    <div class="topbar-title" id="pageTitle">主地图</div>
+    <div class="topbar-status">
+      <span>暴雨夜 19:00</span>
+      <span>记忆 42%</span>
+      <button class="btn sm" onclick="showToast('进度已保存')">保存</button>
+    </div>
+  </header>
+
+  <!-- ============ 主内容（滚动区） ============ -->
+  <main class="content">
+
+    <!-- ===== 01 登录页 ===== -->
+    <div class="page" id="page-login">
+      <div class="center-col">
+        <div class="img-ph" style="height:120px;">游戏 LOGO 占位</div>
+        <div>
+          <div class="field-label">账号</div>
+          <div class="field-ph"></div>
+        </div>
+        <div>
+          <div class="field-label">密码</div>
+          <div class="field-ph"></div>
+        </div>
+        <button class="btn primary" onclick="login()">登录</button>
+        <button class="btn" onclick="showToast('以游客身份进入')">游客模式</button>
+      </div>
+    </div>
+
+    <!-- ===== 02 主地图（核心） ===== -->
+    <div class="page active" id="page-map">
+      <div class="map-layout">
+        <div class="map-main panel">
+          <div class="panel-head">山庄全景 · 经折装展开图<span class="hint">（竖屏长卷，单屏可见全部地点）</span></div>
+          <div class="scroll map-scroll">
+
+            <!-- 二楼 -->
+            <div class="floor">
+              <div class="floor-label">二 楼</div>
+              <div class="floor-diagram">
+                <div class="row"><div class="room" data-name="阁楼" data-status="未调查">阁楼</div></div>
+                <div class="conn-v"></div>
+                <div class="row">
+                  <div class="room" data-name="客房" data-status="有新线索" data-cls="s-new">客房</div>
+                  <div class="conn-h"></div>
+                  <div class="room" data-name="走廊" data-status="已调查" data-cls="s-done">走廊</div>
+                  <div class="conn-h"></div>
+                  <div class="room" data-name="主卧" data-status="可进入">主卧</div>
+                </div>
+                <div class="conn-v"></div>
+                <div class="row"><div class="room" data-name="客房（审讯室）" data-status="未解锁" data-cls="s-lock">客房（审讯室）</div></div>
+              </div>
+            </div>
+
+            <!-- 一楼 -->
+            <div class="floor">
+              <div class="floor-label">一 楼</div>
+              <div class="floor-diagram">
+                <div class="row"><div class="room" data-name="门厅" data-status="已调查" data-cls="s-done">门厅</div></div>
+                <div class="conn-v"></div>
+                <div class="row">
+                  <div class="room" data-name="大厅" data-status="有新线索" data-cls="s-new">大厅</div>
+                  <div class="conn-h"></div>
+                  <div class="room" data-name="会客室" data-status="可进入">会客室</div>
+                </div>
+                <div class="conn-v"></div>
+                <div class="row">
+                  <div class="room" data-name="餐厅" data-status="可进入">餐厅</div>
+                  <div class="conn-h"></div>
+                  <div class="room" data-name="书房" data-status="有新线索" data-cls="s-new">书房</div>
+                </div>
+                <div class="conn-v"></div>
+                <div class="row">
+                  <div class="room" data-name="厨房" data-status="可进入">厨房</div>
+                  <div class="conn-h"></div>
+                  <div class="room" data-name="后院" data-status="未调查">后院</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 地下 -->
+            <div class="floor">
+              <div class="floor-label">地 下</div>
+              <div class="floor-diagram">
+                <div class="row">
+                  <div class="room" data-name="地下室" data-status="未解锁" data-cls="s-lock">地下室</div>
+                  <div class="conn-h"></div>
+                  <div class="room" data-name="发电房" data-status="未解锁" data-cls="s-lock">发电房</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 室外 -->
+            <div class="floor">
+              <div class="floor-label">室 外</div>
+              <div class="floor-diagram">
+                <div class="row">
+                  <div class="room" data-name="花园" data-status="可进入">花园</div>
+                  <div class="conn-h"></div>
+                  <div class="room" data-name="山路" data-status="未调查">山路</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 隐藏 -->
+            <div class="floor">
+              <div class="floor-label">隐 藏</div>
+              <div class="floor-diagram">
+                <div class="row"><div class="room" data-name="密道" data-status="隐藏·未解锁" data-cls="s-lock" data-hidden="1">密道</div></div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <aside class="map-side panel">
+          <div class="panel-head">图例</div>
+          <div class="legend">
+            <div class="legend-item"><div class="legend-box"></div>可进入 / 未调查</div>
+            <div class="legend-item"><div class="legend-box lb-new"></div>有新线索（!）</div>
+            <div class="legend-item"><div class="legend-box lb-done"></div>已调查（✓）</div>
+            <div class="legend-item"><div class="legend-box lb-lock"></div>未解锁（锁）</div>
+          </div>
+          <div class="selected-info" id="selInfo">点击地图上的任意地点，查看详情并进入调查。</div>
+        </aside>
+      </div>
+    </div>
+
+    <!-- ===== 03 房间调查（灵视聚焦 + 事件回放） ===== -->
+    <div class="page" id="page-room">
+      <!-- 顶栏：快捷导航 -->
+      <div class="room-topbar">
+        <button class="btn-nav" onclick="showPage('page-map')">← 地图</button>
+        <button class="btn-nav" onclick="showPage('page-guest')">宾客</button>
+        <button class="btn-nav" onclick="showToast('证物栏开发中')" style="position:relative;">证物栏<span style="position:absolute;top:-2px;right:-4px;width:6px;height:6px;background:#c33;border-radius:50%;"></span></button>
+        <select class="loc-select" id="roomLocSelect">
+          <option value="书房">书房</option>
+          <option value="大厅">大厅</option>
+          <option value="门厅">门厅</option>
+          <option value="餐厅">餐厅</option>
+        </select>
+        <button class="btn-nav" onclick="showPage('page-timeline')" style="margin-left:auto;">时间线</button>
+        <span class="room-datetime" id="roomDateTime">星期二 15:00</span>
+      </div>
+
+      <!-- 视图 A：灵视聚焦（选角色+时间→回响） -->
+      <div class="focus-area" id="focusArea">
+        <div class="focus-hint">记忆微弱……召唤回响以重构事件。</div>
+
+        <div class="focus-section-title">人物</div>
+        <div class="char-select-grid" id="charSelectGrid">
+          <!-- 蒋龙 -->
+          <div class="focus-char-card" data-cname="蒋龙" onclick="toggleCharSelect(this)">
+            <div class="img-ph focus-avatar">07</div>
+            <span class="focus-char-name">???</span>
+          </div>
+          <!-- 张弛 -->
+          <div class="focus-char-card" data-cname="张弛" onclick="toggleCharSelect(this)">
+            <div class="img-ph focus-avatar">01</div>
+            <span class="focus-char-name">???</span>
+          </div>
+        </div>
+
+        <button class="btn-resonate" id="btnResonate" onclick="doResonate()">回响</button>
+      </div>
+
+      <!-- 视图 B：事件回放（回响成功后显示） -->
+      <div class="event-view" id="eventView">
+        <!-- 事件内容由 JS 动态渲染 -->
+      </div>
+
+      <!-- 底部时间轴 -->
+      <div class="rail-date">1947年 10月15日 星期二 下午</div>
+      <div class="time-rail" id="timeRail">
+        <!-- 时间格：15:00 ~ 20:00，每半小时一格 -->
+        <div class="time-slot" data-time="15:00" onclick="selectTime(this)">15:00</div>
+        <div class="time-slot" data-time="15:30" onclick="selectTime(this)">15:30</div>
+        <div class="time-slot" data-time="16:00" onclick="selectTime(this)">16:00</div>
+        <div class="time-slot" data-time="16:30" onclick="selectTime(this)">16:30</div>
+        <div class="time-slot" data-time="17:00" onclick="selectTime(this)">17:00</div>
+        <div class="time-slot" data-time="17:30" onclick="selectTime(this)">17:30</div>
+        <div class="time-slot" data-time="18:00" onclick="selectTime(this)">18:00</div>
+        <div class="time-slot" data-time="18:30" onclick="selectTime(this)">18:30</div>
+        <div class="time-slot" data-time="19:00" onclick="selectTime(this)">19:00</div>
+        <div class="time-slot" data-time="19:30" onclick="selectTime(this)">19:30</div>
+        <div class="time-slot" data-time="20:00" onclick="selectTime(this)">20:00</div>
+      </div>
+    </div>
+
+    <!-- ===== 04 宾客档案（卡片网格·参考图布局） ===== -->
+    <div class="page" id="page-guest">
+      <div class="guest-dossier">
+        <div class="dossier-head">
+          <span class="dossier-title">案件档案：宾客</span>
+          <button class="btn sm" onclick="showToast('档案已关闭')">关闭档案</button>
+        </div>
+        <div class="dossier-body scroll">
+          <div class="card-grid" id="charGrid">
+            <!-- Row 1: 01 张弛 / 02 黄澄澄 / 03 王皓 / 04 叶浏 / 07 蒋龙 -->
+            <div class="char-card" data-char="张弛" data-role="淞沪警备司令部稽查处某侦缉队长" data-num="01">
+              <div class="img-ph char-avatar">01</div>
+              <span class="char-name">???</span>
+              <button class="btn btn-id" onclick="openIdentify(this)">确认身份</button>
+            </div>
+            <div class="char-card" data-char="蒋龙" data-role="卖报小青年 / 共党情报人员" data-num="07">
+              <div class="img-ph char-avatar">07</div>
+              <span class="char-name">???</span>
+              <button class="btn btn-id" onclick="openIdentify(this)">确认身份</button>
+            </div>
+            <div class="char-card" data-char="黄澄澄" data-role="银行行长" data-num="02">
+              <div class="img-ph char-avatar">02</div>
+              <span class="char-name locked">???</span>
+              <button class="btn btn-id" onclick="openIdentify(this)">确认身份</button>
+            </div>
+            <div class="char-card" data-char="王皓" data-role="报社记者" data-num="03">
+              <div class="img-ph char-avatar">03</div>
+              <span class="char-name locked">???</span>
+              <button class="btn btn-id" onclick="openIdentify(this)">确认身份</button>
+            </div>
+            <div class="char-card" data-char="叶浏" data-role="庄园调酒师" data-num="04">
+              <div class="img-ph char-avatar">04</div>
+              <span class="char-name locked">???</span>
+              <button class="btn btn-id" onclick="openIdentify(this)">确认身份</button>
+            </div>
+            <!-- Row 2: 05 史策 / 06 顾宇峰 / 08 刘思维 / 10 郭大宝 / 09 东靖川 -->
+            <div class="char-card" data-char="史策" data-role="电影明星大小姐 / 共党情报人员" data-num="05">
+              <div class="img-ph char-avatar">05</div>
+              <span class="char-name locked">???</span>
+              <button class="btn btn-id" onclick="openIdentify(this)">确认身份</button>
+            </div>
+            <div class="char-card" data-char="顾宇峰" data-role="三板斧山庄所有者" data-num="06">
+              <div class="img-ph char-avatar">06</div>
+              <span class="char-name">???</span>
+              <button class="btn btn-id" onclick="openIdentify(this)">确认身份</button>
+            </div>
+            <div class="char-card" data-char="刘思维" data-role="稽查处行动组长" data-num="08">
+              <div class="img-ph char-avatar">08</div>
+              <span class="char-name locked">???</span>
+              <button class="btn btn-id" onclick="openIdentify(this)">确认身份</button>
+            </div>
+            <div class="char-card" data-char="郭大宝" data-role="医务人员" data-num="10">
+              <div class="img-ph char-avatar">10</div>
+              <span class="char-name locked">???</span>
+              <button class="btn btn-id" onclick="openIdentify(this)">确认身份</button>
+            </div>
+            <div class="char-card" data-char="东靖川" data-role="管家（对顾少爷忠心耿耿）" data-num="09">
+              <div class="img-ph char-avatar">09</div>
+              <span class="char-name locked">???</span>
+              <button class="btn btn-id" onclick="openIdentify(this)">确认身份</button>
+            </div>
+            <!-- Row 3: 11 欧剑宇 -->
+            <div class="char-card" data-char="欧剑宇" data-role="商人" data-num="11">
+              <div class="img-ph char-avatar">11</div>
+              <span class="char-name locked">???</span>
+              <button class="btn btn-id" onclick="openIdentify(this)">确认身份</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== 05 证物栏 ===== -->
+    <div class="page" id="page-evidence">
+      <div class="tabs" id="evTabs">
+        <div class="tab active" data-tab="卷宗">卷宗</div>
+        <div class="tab" data-tab="笔记">笔记</div>
+        <div class="tab" data-tab="物品">物品</div>
+        <div class="tab" data-tab="文本记录">文本记录</div>
+        <div class="tab" data-tab="术语集">术语集</div>
+        <div class="tab" data-tab="指南">指南</div>
+        <div class="tab" data-tab="提示">提示</div>
+      </div>
+      <div class="tab-content scroll" id="evContent">
+        <div class="list-item">卷宗条目：山庄平面图（已获取）</div>
+        <div class="list-item">卷宗条目：军统封锁令（已获取）</div>
+        <div class="list-item">卷宗条目：死者验尸报告（未解锁）</div>
+      </div>
+    </div>
+
+    <!-- ===== 06 全局时间线 ===== -->
+    <div class="page" id="page-timeline">
+      <div class="panel" style="flex:1;margin:var(--space);display:flex;flex-direction:column;min-height:0;">
+        <div class="panel-head">全局时间线<span class="hint">（T0 入庄 → T5 暴雨封山）</span></div>
+        <div class="scroll timeline" style="flex:1;">
+          <div class="tl-node"><div class="tl-time">T0 18:00</div><div class="tl-title">七位宾客陆续入庄</div><button class="btn sm" onclick="showToast('查看 T0 事件回放')">查看</button></div>
+          <div class="tl-node"><div class="tl-time">T1 18:40</div><div class="tl-title">晚餐开始，主人离席</div><button class="btn sm" onclick="showToast('查看 T1 事件回放')">查看</button></div>
+          <div class="tl-node"><div class="tl-time">T2 19:07</div><div class="tl-title">枪响，发现死者</div><button class="btn sm" onclick="showToast('查看 T2 事件回放')">查看</button></div>
+          <div class="tl-node"><div class="tl-time">T3 19:30</div><div class="tl-title">军统官兵抵达，封锁庄园</div><button class="btn sm" onclick="showToast('查看 T3 事件回放')">查看</button></div>
+          <div class="tl-node"><div class="tl-time">T4 20:00</div><div class="tl-time"></div><div class="tl-title">开始逐室搜查</div><button class="btn sm" onclick="showToast('查看 T4 事件回放')">查看</button></div>
+          <div class="tl-node"><div class="tl-time">T5 21:00</div><div class="tl-title">暴雨封山，断联</div><button class="btn sm" onclick="showToast('查看 T5 事件回放')">查看</button></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== 07 调查报告 ===== -->
+    <div class="page" id="page-report">
+      <div class="page-pad">
+        <div class="report-section">
+          <h4>一、死者与现场</h4>
+          <div class="report-row"><div class="field-label">死因</div><div class="field-ph" style="height:30px;"></div></div>
+          <div class="report-row"><div class="field-label">凶器</div><div class="field-ph" style="height:30px;"></div></div>
+          <div class="report-row"><div class="field-label">第一现场</div><div class="field-ph" style="height:30px;"></div></div>
+        </div>
+        <div class="report-section">
+          <h4>二、嫌疑人排除</h4>
+          <div class="report-row"><div class="field-label">已排除</div><div class="field-ph" style="height:30px;"></div></div>
+          <div class="report-row"><div class="field-label">重点嫌疑</div><div class="field-ph" style="height:30px;"></div></div>
+        </div>
+        <div class="report-section">
+          <h4>三、结论</h4>
+          <div class="report-row"><div class="field-label">真凶</div><div class="field-ph" style="height:30px;"></div></div>
+          <div class="report-row"><div class="field-label">动机</div><div class="field-ph" style="height:60px;"></div></div>
+        </div>
+        <div style="display:flex;gap:10px;">
+          <button class="btn" onclick="openDialog('dlg-report')">预览报告</button>
+          <button class="btn primary" onclick="showToast('调查报告已提交')">提交报告</button>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- ============ 底部 Tab 导航（全部页面入口） ============ -->
+  <nav class="bottomnav" id="nav">
+    <button class="nav-item" data-page="page-login">01 登录</button>
+    <button class="nav-item active" data-page="page-map">02 地图</button>
+    <button class="nav-item" data-page="page-room">03 调查</button>
+    <button class="nav-item" data-page="page-guest">04 宾客</button>
+    <button class="nav-item" data-page="page-evidence">05 证物</button>
+    <button class="nav-item" data-page="page-timeline">06 时间</button>
+    <button class="nav-item" data-page="page-report">07 报告</button>
+  </nav>
+</div>
+
+<!-- ============ Dialog：地点详情 / 报告预览 ============ -->
+<div class="dialog-overlay" id="dlg-room">
+  <div class="dialog">
+    <div class="dialog-head"><span id="dlgRoomTitle">地点</span><button class="btn sm" onclick="closeDialog('dlg-room')">关闭</button></div>
+    <div class="dialog-body">
+      <p>状态：<b id="dlgRoomStatus"></b></p>
+      <div class="img-ph" style="height:120px;margin:10px 0;">场景占位图</div>
+      <p style="color:var(--text-light);font-size:12px;">（此处为房间调查入口，点击进入后可查看线索与声音碎片）</p>
+    </div>
+    <div class="dialog-foot">
+      <button class="btn" onclick="closeDialog('dlg-room')">取消</button>
+      <button class="btn primary" onclick="enterRoom()">进入调查</button>
+    </div>
+  </div>
+</div>
+
+<div class="dialog-overlay" id="dlg-report">
+  <div class="dialog">
+    <div class="dialog-head"><span>调查报告预览</span><button class="btn sm" onclick="closeDialog('dlg-report')">关闭</button></div>
+    <div class="dialog-body">
+      <div class="img-ph" style="height:160px;margin-bottom:10px;">报告预览占位</div>
+      <p style="color:var(--text-light);font-size:12px;">（汇总当前已收集线索，生成可供提交的推理报告）</p>
+    </div>
+    <div class="dialog-foot">
+      <button class="btn primary" onclick="closeDialog('dlg-report');showToast('报告已生成')">确认生成</button>
+    </div>
+  </div>
+</div>
+
+<div class="dialog-overlay" id="dlg-identify">
+  <div class="dialog dlg-identify">
+    <div class="dialog-head"><span>这是谁？</span></div>
+    <div class="dialog-body">
+      <!-- 角色编号头像 -->
+      <div class="id-avatar" id="idAvatarNum">--</div>
+      <!-- 选择名字 -->
+      <div class="id-field">
+        <label>选择名字：</label>
+        <div class="picker-wrap" id="pickNameWrap">
+          <div class="picker-trigger" id="pickNameTrigger" onclick="togglePicker('name')">请选择</div>
+          <div class="picker-list" id="pickNameList"></div>
+        </div>
+      </div>
+      <!-- 选择身份（职业） -->
+      <div class="id-field">
+        <label>选择身份：</label>
+        <div class="picker-wrap" id="pickRoleWrap">
+          <div class="picker-trigger" id="pickRoleTrigger" onclick="togglePicker('role')">请选择</div>
+          <div class="picker-list" id="pickRoleList"></div>
+        </div>
+      </div>
+    </div>
+    <div class="dialog-foot">
+      <button class="btn" onclick="closeDialog('dlg-identify')">取消</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Toast ============ -->
+<div class="toast" id="toast"></div>
+
+<script>
+  /* ---------- 页面导航 ---------- */
+  var navBtns = document.querySelectorAll('#nav .nav-item');
+  var titles = {
+    'page-login':'登录页','page-map':'主地图','page-room':'房间调查',
+    'page-guest':'宾客档案','page-evidence':'证物栏','page-timeline':'全局时间线','page-report':'调查报告'
+  };
+  navBtns.forEach(function(b){
+    b.addEventListener('click', function(){
+      var pid = b.getAttribute('data-page');
+      showPage(pid);
+    });
+  });
+  function showPage(pid){
+    document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});
+    document.getElementById(pid).classList.add('active');
+    navBtns.forEach(function(b){b.classList.toggle('active', b.getAttribute('data-page')===pid);});
+    document.getElementById('pageTitle').textContent = titles[pid] || '';
+  }
+
+  /* ---------- Dialog / Picker 关闭逻辑 ---------- */
+  function openDialog(id){document.getElementById(id).classList.add('show');}
+  function closeDialog(id){
+    document.getElementById(id).classList.remove('show');
+    // 同时关闭所有选择器
+    document.querySelectorAll('.picker-list').forEach(function(l){l.classList.remove('show');});
+  }
+  document.querySelectorAll('.dialog-overlay').forEach(function(o){
+    o.addEventListener('click', function(e){
+      if(e.target===o) o.classList.remove('show');
+    });
+  });
+  /* 选择器外部点击也关闭 */
+  document.addEventListener('click',function(e){
+    if(!e.target.closest('.picker-wrap')){
+      document.querySelectorAll('.picker-list').forEach(function(l){l.classList.remove('show');});
+    }
+  });
+
+  /* ---------- Toast ---------- */
+  var toastTimer=null;
+  function showToast(msg){
+    var t=document.getElementById('toast');
+    t.textContent=msg;t.classList.add('show');
+    if(toastTimer)clearTimeout(toastTimer);
+    toastTimer=setTimeout(function(){t.classList.remove('show');},2200);
+  }
+
+  /* ---------- 主地图：地点交互 ---------- */
+  var currentRoom=null;
+  document.querySelectorAll('.room').forEach(function(r){
+    // Tooltip（状态说明）
+    var tip=document.createElement('span');
+    tip.className='tooltip';
+    tip.textContent=r.getAttribute('data-name')+' · '+r.getAttribute('data-status');
+    var wrap=document.createElement('span');
+    wrap.className='tooltip-wrap';
+    r.parentNode.insertBefore(wrap,r);
+    wrap.appendChild(r);wrap.appendChild(tip);
+
+    r.addEventListener('click', function(){
+      var name=r.getAttribute('data-name');
+      var status=r.getAttribute('data-status');
+      var hidden=r.getAttribute('data-hidden');
+      if(hidden){
+        showToast('密道尚未解锁：需先找到【地窖钥匙】线索');
+        return;
+      }
+      currentRoom=name;
+      document.getElementById('dlgRoomTitle').textContent=name;
+      document.getElementById('dlgRoomStatus').textContent=status;
+      document.getElementById('selInfo').innerHTML='已选地点：<b>'+name+'</b><br>状态：'+status+'<br><br>点击下方「进入调查」跳转至房间调查页。';
+      openDialog('dlg-room');
+    });
+  });
+  function enterRoom(){
+    closeDialog('dlg-room');
+    showToast('进入「'+currentRoom+'」调查');
+    showPage('page-room');
+  }
+
+  /* ---------- 登录 ---------- */
+  function login(){ showToast('登录成功'); showPage('page-map'); }
+
+  /* ---------- 证物栏 Tab ---------- */
+  var evData={
+    '卷宗':['卷宗条目：山庄平面图（已获取）','卷宗条目：军统封锁令（已获取）','卷宗条目：死者验尸报告（未解锁）'],
+    '笔记':['手写笔记：大雨夜不宜出门','手写笔记：主人近期神情慌张'],
+    '物品':['物品：半截信封','物品：停摆的怀表','物品：泥脚印石膏模'],
+    '文本记录':['对话：白鸽与青蛇曾在书房争执','对话：朱雀声称整晚未离房'],
+    '术语集':['术语：灵视（记忆回溯能力）','术语：封山令'],
+    '指南':['指南：优先排查有「!」标记的地点','指南：密道需集齐三把钥匙'],
+    '提示':['提示：注意时间线 T2 前后的不在场证明','提示：发电房断电与封山有关']
+  };
+  document.querySelectorAll('#evTabs .tab').forEach(function(t){
+    t.addEventListener('click', function(){
+      document.querySelectorAll('#evTabs .tab').forEach(function(x){x.classList.remove('active');});
+      t.classList.add('active');
+      var key=t.getAttribute('data-tab');
+      var box=document.getElementById('evContent');
+      box.innerHTML='';
+      (evData[key]||[]).forEach(function(txt){
+        var d=document.createElement('div');d.className='list-item';d.textContent=txt;box.appendChild(d);
+      });
+    });
+  });
+
+  /* ---------- 宾客档案：确认身份（名字+职业双选匹配） ---------- */
+
+  /* 角色正确答案（玩家看不到） */
+  var charAnswers={
+    '01':{name:'张弛',role:'侦缉队长'},
+    '07':{name:'蒋龙',role:'卖报青年'},
+    '02':{name:'黄澄澄',role:'银行行长'},
+    '03':{name:'王皓',role:'报社记者'},
+    '04':{name:'叶浏',role:'调酒师'},
+    '05':{name:'史策',role:'电影明星'},
+    '06':{name:'顾宇峰',role:'山庄主人'},
+    '08':{name:'刘思维',role:'行动组长'},
+    '10':{name:'郭大宝',role:'医务人员'},
+    '09':{name:'东靖川',role:'管家'},
+    '11':{name:'欧剑宇',role:'商人'}
+  };
+
+  /* 玩家已收集的名字池（模拟调查进度——已打乱顺序） */
+  var collectedNames=[
+    {text:'顾宇峰',id:'n7'},{text:'郭大宝',id:'n10'},{text:'叶浏',id:'n5'},
+    {text:'张弛',id:'n1'},{text:'东靖川',id:'n9'},{text:'史策',id:'n6'},
+    {text:'欧剑宇',id:'n11'},{text:'王皓',id:'n4'},{text:'刘思维',id:'n8'},
+    {text:'蒋龙',id:'n2'},{text:'黄澄澄',id:'n3'}
+  ];
+
+  /* 玩家已收集的职业池（已简略为 2~4 字，已打乱顺序） */
+  var collectedRoles=[
+    {text:'山庄主人',id:'r7'},
+    {text:'医务人员',id:'r10'},
+    {text:'调酒师',id:'r5'},
+    {text:'侦缉队长',id:'r1'},
+    {text:'电影明星',id:'r6'},
+    {text:'银行行长',id:'r3'},
+    {text:'行动组长',id:'r8'},
+    {text:'卖报青年',id:'r2'},
+    {text:'商人',id:'r11'},
+    {text:'报社记者',id:'r4'},
+    {text:'管家',id:'r9'}
+  ];
+
+  /* 当前正在确认的角色 */
+  var idTargetCard=null;
+  var pickedName=null;
+  var pickedRole=null;
+
+  /* 打开确认弹窗 */
+  function openIdentify(btn){
+    var card=btn.closest('.char-card');
+    if(card.classList.contains('identified'))return; // 已确认的不再弹
+    idTargetCard=card;
+    pickedName=null;pickedRole=null;
+
+    // 填入编号头像
+    document.getElementById('idAvatarNum').textContent=card.getAttribute('data-num');
+
+    // 重置选择器
+    resetPicker('pickNameTrigger','pickNameList',collectedNames);
+    resetPicker('pickRoleTrigger','pickRoleList',collectedRoles);
+
+    openDialog('dlg-identify');
+  }
+
+  function resetPicker(triggerId,listId,items){
+    var tr=document.getElementById(triggerId);tr.textContent='请选择';
+    var ul=document.getElementById(listId);ul.innerHTML='';
+    items.forEach(function(item){
+      var opt=document.createElement('div');opt.className='picker-opt';
+      opt.textContent=item.text;opt.setAttribute('data-val',item.text);
+      opt.addEventListener('click',function(){
+        selectOption(listId,triggerId,item.text);
+      });
+      ul.appendChild(opt);
+    });
+  }
+
+  /* 展开/收起选项列表 */
+  function togglePicker(type){
+    var listId=(type==='name')?'pickNameList':'pickRoleList';
+    var otherId=(type==='name')?'pickRoleList':'pickNameList';
+    document.getElementById(otherId).classList.remove('show'); // 关闭另一个
+    document.getElementById(listId).classList.toggle('show');
+  }
+
+  /* 选中一个选项 */
+  function selectOption(listId,triggerId,val){
+    document.getElementById(triggerId).textContent=val;
+    document.getElementById(listId).classList.remove('show');
+
+    // 高亮选中项
+    var opts=document.getElementById(listId).querySelectorAll('.picker-opt');
+    opts.forEach(function(o){o.classList.toggle('selected',o.getAttribute('data-val')===val);});
+
+    if(listId==='pickNameList'){pickedName=val;}
+    else{pickedRole=val;}
+
+    // 名字和职业都选了 → 自动验证
+    if(pickedName&&pickedRole){validateIdentity();}
+  }
+
+  /* 验证：名字+职业是否都匹配当前角色 */
+  function validateIdentity(){
+    if(!idTargetCard)return;
+    var num=idTargetCard.getAttribute('data-num');
+    var ans=charAnswers[num];
+    if(!ans)return;
+
+    if(pickedName===ans.name && pickedRole===ans.role){
+      // 匹配成功！
+      closeDialog('dlg-identify');
+      identifySuccess(idTargetCard,pickedName,pickedRole);
+    }else{
+      // 不匹配，提示错误但不关闭（让玩家继续试）
+      var msg='身份不匹配';
+      if(pickedName!==ans.name)msg+='：名字不对';
+      else if(pickedRole!==ans.role)msg+='：职业不对';
+      showToast(msg);
+    }
+  }
+
+  /* 确认成功 → 卡片变为已确认状态 */
+  function identifySuccess(card,name,role){
+    card.classList.add('identified');
+    var nameSpan=card.querySelector('.char-name');
+    nameSpan.textContent=name;
+    nameSpan.classList.remove('locked');
+
+    // 在姓名下方插入职业行（如果还没有）
+    if(!card.querySelector('.char-role-line')){
+      var roleLine=document.createElement('span');
+      roleLine.className='char-role-line';
+      roleLine.textContent=role;
+      card.insertBefore(roleLine,card.querySelector('.btn-id'));
+    }
+    showToast('身份确认成功！'+name+' · '+role);
+  }
+
+  /* ============ 房间调查：灵视聚焦 + 事件回放 ============ */
+
+  /* 当前选中状态 */
+  var selectedChars=[];   // 已选角色名数组
+  var selectedTime=null;  // 已选时间字符串，如 "15:00"
+
+  /* 正确答案（第一幕·入庄） */
+  var FOCUS_ANSWER={
+    requiredChars:['蒋龙','张弛'],  // 必须都选中
+    correctTime:'15:00'
+  };
+
+  /* 切换角色选中状态 */
+  function toggleCharSelect(card){
+    var name=card.getAttribute('data-cname');
+    if(card.classList.contains('selected')){
+      card.classList.remove('selected');
+      selectedChars=selectedChars.filter(function(n){return n!==name;});
+    }else{
+      card.classList.add('selected');
+      // 显示真名
+      var nameSpan=card.querySelector('.focus-char-name');
+      if(nameSpan.textContent==='???') nameSpan.textContent=name;
+      selectedChars.push(name);
+    }
+  }
+
+  /* 选择时间格 */
+  function selectTime(slot){
+    // 取消其他选中
+    document.querySelectorAll('#timeRail .time-slot').forEach(function(s){s.classList.remove('selected');});
+    slot.classList.add('selected');
+    selectedTime=slot.getAttribute('data-time');
+    // 更新顶栏时间显示
+    var dt=document.getElementById('roomDateTime');
+    if(dt) dt.textContent='星期二 '+selectedTime;
+  }
+
+  /* 点击回响：验证 → 成功则渲染事件 */
+  function doResonate(){
+    var ans=FOCUS_ANSWER;
+    /* 检查角色是否全选对 */
+    var missing=ans.requiredChars.filter(function(c){return selectedChars.indexOf(c)<0;});
+    var extra=selectedChars.filter(function(c){return ans.requiredChars.indexOf(c)<0;});
+    if(missing.length>0){
+      showToast('人物不完整：还需要找到更多线索');
+      return;
+    }
+    if(extra.length>0){
+      showToast('人物不对：当前场景没有这些人');
+      return;
+    }
+    /* 检查时间 */
+    if(!selectedTime){
+      showToast('请先在时间轴上选择一个时刻');
+      return;
+    }
+    if(selectedTime!==ans.correctTime){
+      showToast('时间偏差：这个时刻没有记忆残留');
+      return;
+    }
+    /* 全部正确！渲染事件 */
+    renderEvent();
+  }
+
+  /* ========== 事件数据（第一幕：入庄） ========== */
+  var EVENT_DATA=[
+    {type:'action',text:'（汽车熄火声。）'},
+    {type:'action',text:'（车门打开。）'},
+    {type:'action',text:'（皮鞋踩上石阶。）'},
+
+    {
+      type:'dialogue',
+      speaker:'张弛',
+      avatar:'01',
+      text:'……就是这里。'
+    },
+    {
+      type:'dialogue',
+      speaker:'蒋龙',
+      avatar:'07',
+      text:'<span class="kw" data-type="地名" data-val="三板斧庄园" onclick="collectKw(this)">三板斧庄园</span>？'
+    },
+
+    {
+      type:'dialogue',
+      speaker:'张弛',
+      avatar:'01',
+      text:'嗯。'
+    },
+    {type:'action',text:'（片刻沉默。）'},
+
+    {
+      type:'dialogue',
+      speaker:'蒋龙',
+      avatar:'07',
+      text:'名字倒挺怪。'
+    },
+    {
+      type:'dialogue',
+      speaker:'张弛',
+      avatar:'01',
+      text:'（笑了一声）<span class="kw" data-type="人名" data-val="顾宇峰" onclick="collectKw(this)">顾宇峰</span>年轻的时候就这样，喝醉了什么都敢叫。'
+    },
+    {type:'action',text:'（<span class="kw" data-type="物品" data-val="打火机" onclick="collectKw(this)">打火机</span>"咔嗒"一声。）'},
+    {type:'action',text:'（短暂的火焰燃起。）'},
+
+    {
+      type:'dialogue',
+      speaker:'张弛',
+      avatar:'01',
+      text:'不过，这地方可不便宜。<br><span class="kw" data-type="人名" data-val="顾宇峰" onclick="collectKw(this)">顾宇峰</span>那点家底，还真被他折腾成了一座庄园。'
+    },
+    {
+      type:'dialogue',
+      speaker:'蒋龙',
+      avatar:'07',
+      text:'你认识他？'
+    },
+    {
+      type:'dialogue',
+      speaker:'张弛',
+      avatar:'01',
+      text:'见过几次。<br>生意人，喝酒比说话多。'
+    },
+    {type:'action',text:'（风吹过门厅。）'},
+    {type:'action',text:'（<span class="kw" data-type="人名" data-val="张弛" onclick="collectKw(this)">张弛</span>轻轻吐出一口烟。）'},
+
+    {
+      type:'dialogue',
+      speaker:'蒋龙',
+      avatar:'07',
+      text:'那今天来的人，不会都是他的朋友吧？'
+    },
+    {
+      type:'dialogue',
+      speaker:'张弛',
+      avatar:'01',
+      text:'朋友？<br>（轻笑。）<br>能坐到一张桌上的人，未必都是朋友。'
+    },
+    {type:'action',text:'（远处传来脚步。）'},
+    {type:'action',text:'（大门缓缓打开。）'},
+
+    {
+      type:'dialogue',
+      speaker:'陌生男人',
+      avatar:'??',
+      text:'<span class="kw" data-type="人名" data-val="张弛" onclick="collectKw(this)">张队长</span>？<br>里面已经等候多时了。'
+    },
+    {type:'action',text:'（<span class="kw" data-type="物品" data-val="打火机" onclick="collectKw(this)">打火机</span>合上的声音。）'},
+
+    {
+      type:'dialogue',
+      speaker:'张弛',
+      avatar:'01',
+      text:'走吧。<br>别乱跑。'
+    },
+    {
+      type:'dialogue',
+      speaker:'蒋龙',
+      avatar:'07',
+      text:'（笑）知道。<br>跟着你就是。'
+    },
+    {type:'action',text:'（两人的脚步渐渐远去。）'},
+    {type:'action',text:'（木门关闭。）'}
+  ];
+
+  /* 已收集关键词记录 */
+  var collectedKw={};
+
+  /* 关键词首现去重：同一 data-val 仅在第一次出现时保留蓝色标记，
+     后续出现降级为纯文本（保留文字，去掉 .kw span）。 */
+  function dedupeKw(html, seen){
+    var tmp=document.createElement('div');
+    tmp.innerHTML=html;
+    tmp.querySelectorAll('.kw').forEach(function(span){
+      var val=span.getAttribute('data-val');
+      if(seen[val]){
+        /* 已出现过——用纯文本节点替换掉整个 span */
+        span.replaceWith(document.createTextNode(span.textContent));
+      }else{
+        seen[val]=true;
+      }
+    });
+    return tmp.innerHTML;
+  }
+
+  /* 渲染事件视图 */
+  function renderEvent(){
+    var focusArea=document.getElementById('focusArea');
+    var eventView=document.getElementById('eventView');
+
+    focusArea.style.display='none';
+    eventView.classList.add('show');
+    eventView.innerHTML='';
+
+    /* 本次渲染内，记录每个关键词是否已首次标蓝 */
+    var seenKw={};
+
+    EVENT_DATA.forEach(function(line){
+      var div=document.createElement('div');div.className='evt-line';
+      var lineText=dedupeKw(line.text, seenKw);
+
+      if(line.type==='action'){
+        /* 动作/旁白行：无头像 */
+        var body=document.createElement('div');body.className='evt-body';
+        body.innerHTML='<div class="evt-action">'+lineText+'</div>';
+        div.appendChild(body);
+      }else{
+        /* 对话行：头像+发言人+台词 */
+        var av=document.createElement('div');av.className='evt-avatar';
+        av.textContent=line.avatar||'?';
+
+        var body=document.createElement('div');body.className='evt-body';
+        body.innerHTML='<div class="evt-speaker">'+line.speaker+'：</div><div class="evt-text">'+lineText+'</div>';
+
+        div.appendChild(av);div.appendChild(body);
+      }
+      eventView.appendChild(div);
+    });
+
+    /* 时间轴标记当前已解锁的时间格（先清旧标记，避免重复） */
+    document.querySelectorAll('#timeRail .time-marker').forEach(function(m){m.remove();});
+    document.querySelectorAll('#timeRail .time-slot').forEach(function(s){
+      if(s.getAttribute('data-time')===FOCUS_ANSWER.correctTime){
+        s.classList.add('correct');
+        // 加三角标记
+        var marker=document.createElement('div');marker.className='time-marker';
+        marker.style.left=(s.offsetLeft+s.offsetWidth/2-7)+'px';
+        document.getElementById('timeRail').appendChild(marker);
+      }
+    });
+
+    showToast('回响成功！记忆重构中……');
+  }
+
+  /* 关键词收集 */
+  function collectKw(el){
+    if(el.classList.contains('collected')) return;
+    var type=el.getAttribute('data-type');
+    var val=el.getAttribute('data-val');
+    el.classList.add('collected');
+    collectedKw[val]=collectedKw[val]||{type:type,count:0};
+    collectedKw[val].count++;
+    showToast('已收集：【'+type+'】'+val);
+  }
+</script>
+</body>
+</html>
